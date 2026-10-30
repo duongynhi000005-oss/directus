@@ -316,8 +316,11 @@ export class VersionsService extends ItemsService<ContentVersion> {
 		return super.updateMany(keys, data, opts);
 	}
 
-	async save(key: PrimaryKey, delta: Partial<Item>, opts?: { patchRevision?: boolean }): Promise<Partial<Item>> {
+	async save(key: PrimaryKey, delta: Partial<Item>, opts?: { patchRevision?: boolean; lastUpdated?: string | Date }): Promise<Partial<Item>> {
 		const version = await super.readOne(key);
+		if (opts?.lastUpdated && version.date_updated && new Date(opts.lastUpdated).getTime() < new Date(version.date_updated).getTime()) {
+			throw new InvalidPayloadError({ reason: 'Version was updated in another session' });
+		}
 
 		const payloadService = new PayloadService(this.collection, {
 			accountability: this.accountability,
